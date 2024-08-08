@@ -20,20 +20,16 @@ export class GameManager extends Component {
         this.node.off('sob-clicked', this.onSoBClicked, this);
     }
 
-    private onSoBClicked(sob: SlotOrBolt) {
-        console.log('onSoBClicked called with:', sob.node.name);
-    
+    private onSoBClicked(sob: SlotOrBolt) {    
         if (this.selectedBolt) {
             if (!sob.isBolt()) {
                 console.log('Swapping bolt and slot:', this.selectedBolt.node.name, sob.node.name);
                 this.swapBoltSlot(this.selectedBolt, sob);
                 this.selectedBolt = null;
             } else {
-                console.log('Clicked on another bolt, deselecting:', this.selectedBolt.node.name);
                 this.selectedBolt = null;
             }
         } else if (sob.isBolt()) {
-            console.log('Bolt selected:', sob.node.name);
             this.selectedBolt = sob;
         } else {
             console.log('Clicked on an empty slot, no action');

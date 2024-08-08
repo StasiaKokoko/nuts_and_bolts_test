@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, RigidBody2D, WheelJoint2D, Vec2, Collider2D, ERigidBody2DType } from 'cc';
+import { _decorator, Component, Node, RigidBody2D, WheelJoint2D, Vec2, Collider2D, ERigidBody2DType, Rect, UITransform } from 'cc';
 import { SlotOrBolt } from './SlotOrBolt';
 const { ccclass, property } = _decorator;
 
@@ -9,6 +9,9 @@ export class Detail extends Component {
 
     private rigidBody: RigidBody2D = null;
     private wheelJoint: WheelJoint2D = null;
+
+    @property(Boolean)
+    private isFallen = false;
 
     onLoad() {
         this.rigidBody = this.getComponent(RigidBody2D);
@@ -29,6 +32,10 @@ export class Detail extends Component {
     }
     
     private updateDetailState(sob: SlotOrBolt) {
+        if (this.isFallen === true) {
+            return;
+        }
+
         if (!sob || this.slotOrBolts.indexOf(sob) === -1) {
             console.log('ignore', sob ? sob.node.name : 'undefined sob');
             return;  // Игнорируем изменения, если SlotOrBolt не относится к этой детали или sob равен undefined
@@ -40,29 +47,20 @@ export class Detail extends Component {
             return;  // Если болт не касается детали, выходим из метода
         }
     
-        if (this.node.getPosition().y < -1000) {
-            console.log('destroy');
-            this.node.destroy();
-            return;
-        }
-    
         const filledSoBs = this.slotOrBolts.filter(sob => sob && sob.isBolt());
         const filledCount = filledSoBs.length;
+        let filledSobsAreTouch = true;
     
         // Логируем всю информацию
         console.log(`---------- Detail: ${this.node.name}`);
         console.log(`Total SoBs: ${this.slotOrBolts.length}`);
         console.log(`Filled SoBs: ${filledCount}`);
-        console.log(`SoBs is touching: ${this.areBoltsTouching()}`);
-        filledSoBs.forEach((sob, index) => {
-            //console.log(`Filled SoB #${index + 1}: ${sob.node.name}`);
-        });
     
         // Логика поведения детали в зависимости от количества заполненных SoBs
-        if (filledCount >= 2 && this.areBoltsTouching()) {
+        if (filledCount >= 2 && this.allBoltsTouching()) {
             console.log('-- 1 --');
             this.setStatic();
-        } else if (filledCount === 1 && this.areBoltsTouching()) {
+        } else if (filledCount === 1 && this.allBoltsTouching()) {
             console.log('-- 2 --');
             this.setDynamic();
             this.attachJoint(filledSoBs[0]);
@@ -74,13 +72,25 @@ export class Detail extends Component {
         
         if (!this.areBoltsTouching()) {
             console.log('-- 3 --');
+            this.isFallen = true;
             this.setDynamic();
             this.detachJoints();
         }
     }
     
     
-    
+    private allBoltsTouching(): boolean {
+        let answer = true;
+        const filledSoBs = this.slotOrBolts.filter(sob => sob && sob.isBolt());
+        filledSoBs.forEach((sob, index) => {
+            answer = this.isColliding(sob.getComponent(Collider2D), this.getComponent(Collider2D));
+            console.log(`Touch? ${sob.node.name} - `, answer);
+            if (answer === false) {
+                return false;
+            }
+        });
+        return answer;
+    }
     
     
 
@@ -104,13 +114,34 @@ export class Detail extends Component {
         return false; // Ни один из болтов не касается детали
     }
 
-    // Метод для проверки пересечения двух коллайдеров
-    private isColliding(colliderA: Collider2D, colliderB: Collider2D): boolean {
-        const worldAABB = colliderA.worldAABB;
-        const worldBABB = colliderB.worldAABB;
-        
-        return worldAABB.intersects(worldBABB);
-    }
+    // Метод для получения мирового BoundingBox узла
+private getWorldBoundingBox(node: Node): Rect {
+    const position = node.getWorldPosition();
+    const scale = node.getWorldScale();
+    const size = node.getComponent(UITransform).contentSize;
+
+    // Учитываем масштаб
+    const width = size.width * scale.x;
+    const height = size.height * scale.y;
+
+    // Создаем BoundingBox в мировых координатах
+    return new Rect(
+        position.x - width / 2,
+        position.y - height / 2,
+        width,
+        height
+    );
+}
+
+// Метод для проверки пересечения двух узлов
+private isColliding(colliderA: Collider2D, colliderB: Collider2D): boolean {
+    const boxA = this.getWorldBoundingBox(colliderA.node);
+    const boxB = this.getWorldBoundingBox(colliderB.node);
+
+    const intersects = boxA.intersects(boxB);
+    console.log(`Colliders intersect: ${intersects}`);
+    return intersects;
+}
 
     private setStatic() {
         if (this.rigidBody) {
