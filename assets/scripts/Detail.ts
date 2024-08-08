@@ -19,6 +19,8 @@ export class Detail extends Component {
                 sob.node.on('state-changed', this.updateDetailState, this);
             }
         });
+
+        this.setStatic();
     }
     
     onDestroy() {
@@ -91,12 +93,14 @@ export class Detail extends Component {
     private setStatic() {
         if (this.rigidBody) {
             this.rigidBody.type = ERigidBody2DType.Static;
+            this.rigidBody.angularVelocity = 0;
             this.detachJoints();
         }
     }
 
     private setDynamic() {
         if (this.rigidBody) {
+            this.rigidBody.angularVelocity = 1;
             this.rigidBody.type = ERigidBody2DType.Dynamic;
         }
     }
