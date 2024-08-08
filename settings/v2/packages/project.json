@@ -3,6 +3,31 @@
   "physics": {
     "gravity": {
       "y": -100
+    },
+    "collisionGroups": [
+      {
+        "index": 1,
+        "name": "Layer1"
+      },
+      {
+        "index": 2,
+        "name": "Layer2"
+      },
+      {
+        "index": 3,
+        "name": "Layer3"
+      },
+      {
+        "index": 4,
+        "name": "Bolt"
+      }
+    ],
+    "collisionMatrix": {
+      "0": 1,
+      "1": 18,
+      "2": 20,
+      "3": 24,
+      "4": 30
     }
   }
 }

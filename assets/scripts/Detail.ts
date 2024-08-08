@@ -34,6 +34,12 @@ export class Detail extends Component {
             return;  // Игнорируем изменения, если SlotOrBolt не относится к этой детали или sob равен undefined
         }
     
+        // Проверяем, является ли sob болтом и касается ли он детали
+        if (sob.isBolt() && !this.areBoltsTouching()) {
+            console.log(`Bolt ${sob.node.name} is not touching the detail, exiting method.`);
+            return;  // Если болт не касается детали, выходим из метода
+        }
+    
         if (this.node.getPosition().y < -1000) {
             console.log('destroy');
             this.node.destroy();
@@ -41,23 +47,39 @@ export class Detail extends Component {
         }
     
         const filledSoBs = this.slotOrBolts.filter(sob => sob && sob.isBolt());
+        const filledCount = filledSoBs.length;
     
-        if (filledSoBs.length === this.slotOrBolts.length) {
-            console.log('-- 0');
+        // Логируем всю информацию
+        console.log(`---------- Detail: ${this.node.name}`);
+        console.log(`Total SoBs: ${this.slotOrBolts.length}`);
+        console.log(`Filled SoBs: ${filledCount}`);
+        console.log(`SoBs is touching: ${this.areBoltsTouching()}`);
+        filledSoBs.forEach((sob, index) => {
+            //console.log(`Filled SoB #${index + 1}: ${sob.node.name}`);
+        });
+    
+        // Логика поведения детали в зависимости от количества заполненных SoBs
+        if (filledCount >= 2 && this.areBoltsTouching()) {
+            console.log('-- 1 --');
             this.setStatic();
-        } else if (filledSoBs.length > 0 && this.areBoltsTouching()) {
-            console.log('-- 1');
+        } else if (filledCount === 1 && this.areBoltsTouching()) {
+            console.log('-- 2 --');
             this.setDynamic();
             this.attachJoint(filledSoBs[0]);
+    
+            // Переключаем Joint для обновления
             this.getComponent(WheelJoint2D).enabled = false;
             this.getComponent(WheelJoint2D).enabled = true;
-            
-        } else {
-            console.log('-- 2');
+        }
+        
+        if (!this.areBoltsTouching()) {
+            console.log('-- 3 --');
             this.setDynamic();
             this.detachJoints();
         }
     }
+    
+    
     
     
     
@@ -121,7 +143,11 @@ export class Detail extends Component {
         if (this.wheelJoint) {
             this.wheelJoint.enabled = false;
         } else {
-            this.wheelJoint = this.addComponent(WheelJoint2D);
+            // Проверяем, есть ли уже WheelJoint2D на объекте
+            this.wheelJoint = this.getComponent(WheelJoint2D);
+            if (!this.wheelJoint) {
+                this.wheelJoint = this.addComponent(WheelJoint2D);
+            }
         }
     
         // Вычисляем якорь относительно координат объекта детали
@@ -143,10 +169,6 @@ export class Detail extends Component {
         this.rigidBody.wakeUp();
         boltRigidBody.wakeUp();
     }
-    
-
-    
-    
     
 
     public detachJoints() {

@@ -43,10 +43,7 @@ export class SlotOrBolt extends Component {
     setFilled(filled: boolean) {
         this.isFilled = filled;
         this.updateSprite();
-     
-        if (filled == false) {
         this.node.emit('state-changed', this);  // Сообщаем об изменении состояния всем подписчикам
-        }
     }
     
     
